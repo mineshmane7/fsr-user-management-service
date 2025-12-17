@@ -1,0 +1,6 @@
+@FSR.UserManagement_HostAddress = http://localhost:5039
+
+GET {{FSR.UserManagement_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
