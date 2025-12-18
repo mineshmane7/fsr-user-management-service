@@ -9,6 +9,6 @@ namespace FSR.UM.Core.Interfaces
 {
     public interface IUserService
     {
-        IEnumerable<User> GetUsers();
+        Task<IEnumerable<User>> GetAllAsync();
     }
 }

@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FSR.UM.Core\FSR.UM.Core.csproj" />
+    <ProjectReference Include="..\FSR.UM.Infrastructure.SqlServer\FSR.UM.Infrastructure.SqlServer.csproj" />
     <ProjectReference Include="..\FSR.UM.Infrastructure\FSR.UM.Infrastructure.csproj" />
   </ItemGroup>
 

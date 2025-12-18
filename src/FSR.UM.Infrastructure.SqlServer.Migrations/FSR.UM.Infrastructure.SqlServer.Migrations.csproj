@@ -6,8 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\FSR.UM.Infrastructure.SqlServer\FSR.UM.Infrastructure.SqlServer.csproj" />
-  </ItemGroup>
-
 </Project>
