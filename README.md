@@ -9,11 +9,11 @@ The solution follows a clean architecture pattern with clear separation of conce
 ```
 FSR.UserManagement/
 ├── FSR.UM.Api/                              # API Layer - Entry point
-│   ├── Endpoints/                           # Minimal API endpoints
-│   │   ├── Endpoints.cs                     # Endpoint registration
-│   │   └── UserEndpoints.cs                 # User-related endpoints
+│   ├── Endpoints/
+│   │   └── UserEndpoints.cs                 # User and Property endpoints
 │   ├── Program.cs                           # Application startup
-│   └── appsettings.json                     # Configuration settings
+│   ├── appsettings.json                     # Configuration settings
+│   └── FSR.UM.Api.csproj                    # Project file
 │
 ├── FSR.UM.Core/                             # Core Domain Layer
 │   ├── Models/                              # Domain entities
@@ -23,26 +23,40 @@ FSR.UserManagement/
 │   │   ├── OrgTier.cs                       # Organization tier entity
 │   │   ├── Property.cs                      # Property entity
 │   │   └── Unit.cs                          # Unit entity
-│   └── Interfaces/                          # Core abstractions
-│       ├── IUserService.cs                  # User service contract
-│       └── IPropertyRepository.cs           # Property repository contract
+│   ├── Interfaces/                          # Core abstractions
+│   │   ├── IUserService.cs                  # User service contract
+│   │   ├── IUserRepository.cs               # User repository contract
+│   │   └── IPropertyRepository.cs           # Property repository contract
+│   └── FSR.UM.Core.csproj                   # Project file
 │
 ├── FSR.UM.Infrastructure/                   # Business Logic Layer
-│   └── Services/
-│       └── UserService.cs                   # User service implementation
+│   ├── Services/
+│   │   └── UserService.cs                   # User service implementation
+│   └── FSR.UM.Infrastructure.csproj         # Project file
 │
 ├── FSR.UM.Infrastructure.SqlServer/         # Data Access Layer
 │   ├── Db/                                  # Database contexts
-│   │   ├── ApplicationDbContext.cs          # Main DB context
+│   │   ├── ApplicationDbContext.cs          # Base DB context
 │   │   ├── AuthDb/
 │   │   │   └── AuthDbContext.cs            # Authentication DB context
 │   │   └── PropertyDb/
 │   │       └── PropertyDbContext.cs        # Property management DB context
 │   ├── Repositories/
+│   │   ├── UserRepository.cs               # User repository implementation
 │   │   └── PropertyRepository.cs           # Property repository implementation
-│   └── DependencyInjection.cs              # Service registration
+│   ├── DependencyInjection.cs              # Service registration
+│   └── FSR.UM.Infrastructure.SqlServer.csproj  # Project file
 │
 └── FSR.UM.Infrastructure.SqlServer.Migrations/  # EF Core Migrations
+    ├── Migrations/
+    │   ├── AuthDb/
+    │   │   ├── 20251218033803_InitialCreate.cs
+    │   │   └── AuthDbContextModelSnapshot.cs
+    │   └── PropertyDb/
+    │       ├── 20251218033819_InitialCreate.cs
+    │       └── PropertyDbContextModelSnapshot.cs
+    ├── DesignTimeDbContextFactory.cs        # Design-time DB context factory
+    └── FSR.UM.Infrastructure.SqlServer.Migrations.csproj  # Project file
 ```
 
 ## 🎯 Architecture Overview
@@ -65,7 +79,9 @@ This project implements **Clean Architecture** principles:
 
 ### Prerequisites
 - .NET 8 SDK
-- SQL Server LocalDB (or SQL Server instance)
+- Swagger
+- Entity Framework Core
+- SQL Server (local instance or SQL Server Express)
 - Visual Studio 2022 or Visual Studio Code
 
 ### Database Configuration
@@ -80,8 +96,8 @@ Connection strings are configured in `appsettings.json`:
 ```json
 {
   "ConnectionStrings": {
-    "CyanAuth": "Server=(localdb)\\mssqllocaldb;Database=CyanAuth;...",
-    "CyanPropertyManagement": "Server=(localdb)\\mssqllocaldb;Database=CyanPropertyManagement;..."
+    "CyanAuth": "Server=localhost;Database=CyanAuth;Integrated Security=True;TrustServerCertificate=True;MultipleActiveResultSets=true",
+    "CyanPropertyManagement": "Server=localhost;Database=CyanPropertyManagement;Integrated Security=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
   }
 }
 ```
@@ -99,13 +115,19 @@ Connection strings are configured in `appsettings.json`:
    dotnet restore
    ```
 
-3. **Run the API**
+3. **Apply database migrations** (if needed)
+   ```bash
+   dotnet ef database update --project FSR.UM.Infrastructure.SqlServer.Migrations --startup-project FSR.UM.Api --context AuthDbContext
+   dotnet ef database update --project FSR.UM.Infrastructure.SqlServer.Migrations --startup-project FSR.UM.Api --context PropertyDbContext
+   ```
+
+4. **Run the API**
    ```bash
    cd FSR.UM.Api
    dotnet run
    ```
 
-4. **Access Swagger UI**
+5. **Access Swagger UI**
    - Navigate to: `https://localhost:<port>/swagger`
    - Swagger UI provides interactive API documentation
 
@@ -114,7 +136,8 @@ Connection strings are configured in `appsettings.json`:
 ### Core Packages
 - **ASP.NET Core 8.0**: Web framework
 - **Swashbuckle.AspNetCore**: API documentation (Swagger/OpenAPI)
-- **Entity Framework Core**: Data access (SQL Server provider)
+- **Entity Framework Core 8.0**: Data access (SQL Server provider)
+- **Microsoft.EntityFrameworkCore.SqlServer**: SQL Server database provider
 
 ## 🔑 Key Features
 
@@ -125,6 +148,8 @@ Connection strings are configured in `appsettings.json`:
 - **RESTful API**: Clean minimal API endpoints
 - **Swagger Documentation**: Interactive API documentation
 - **CORS Enabled**: Cross-origin resource sharing configured
+- **Repository Pattern**: Clean separation of data access logic
+- **Multiple Database Contexts**: Separate contexts for auth and property management
 
 ## 🛠️ Development
 
@@ -160,13 +185,29 @@ FSR.UM.Infrastructure.SqlServer.Migrations
 2. Create interfaces in `FSR.UM.Core/Interfaces`
 3. Implement services in `FSR.UM.Infrastructure/Services`
 4. Add repository implementations in `FSR.UM.Infrastructure.SqlServer/Repositories`
-5. Register endpoints in `FSR.UM.Api/Endpoints`
+5. Register services in `FSR.UM.Infrastructure.SqlServer/DependencyInjection.cs`
+6. Register endpoints in `FSR.UM.Api/Endpoints`
+
+### Database Migrations
+
+To create a new migration:
+
+```bash
+# For AuthDb
+dotnet ef migrations add MigrationName --project FSR.UM.Infrastructure.SqlServer.Migrations --startup-project FSR.UM.Api --context AuthDbContext --output-dir Migrations/AuthDb
+
+# For PropertyDb
+dotnet ef migrations add MigrationName --project FSR.UM.Infrastructure.SqlServer.Migrations --startup-project FSR.UM.Api --context PropertyDbContext --output-dir Migrations/PropertyDb
+```
 
 ## 📝 API Endpoints
 
-API endpoints are registered through:
-- `UserEndpoints.cs`: User management operations
-- Extensible endpoint registration pattern via `Endpoints.cs`
+### User Endpoints
+- `GET /users` - Get all users
+
+### Property Endpoints
+- `GET /properties` - Get all properties
+- `POST /properties` - Create a new property
 
 Access the full API documentation via Swagger UI when running the application.
 
@@ -177,3 +218,7 @@ Access the full API documentation via Swagger UI when running the application.
 3. Commit your changes (`git commit -m 'Add some feature'`)
 4. Push to the branch (`git push origin feature/YourFeature`)
 5. Open a Pull Request
+
+## 📄 License
+
+This project is part of FSR (Financial Services Resources) and is proprietary software.
