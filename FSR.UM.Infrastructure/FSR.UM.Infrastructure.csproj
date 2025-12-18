@@ -10,4 +10,8 @@
     <ProjectReference Include="..\FSR.UM.Core\FSR.UM.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>

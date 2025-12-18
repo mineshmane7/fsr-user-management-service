@@ -115,21 +115,22 @@ Connection strings are configured in `appsettings.json`:
    dotnet restore
    ```
 
-3. **Apply database migrations** (if needed)
-   ```bash
-   dotnet ef database update --project FSR.UM.Infrastructure.SqlServer.Migrations --startup-project FSR.UM.Api --context AuthDbContext
-   dotnet ef database update --project FSR.UM.Infrastructure.SqlServer.Migrations --startup-project FSR.UM.Api --context PropertyDbContext
-   ```
-
-4. **Run the API**
+3. **Run the API** (Auto-migration enabled ✅)
    ```bash
    cd FSR.UM.Api
    dotnet run
    ```
+   
+   The application will automatically:
+   - Create databases if they don't exist
+   - Apply all pending migrations
+   - Seed initial data (admin user and default property)
 
-5. **Access Swagger UI**
+4. **Access Swagger UI**
    - Navigate to: `https://localhost:<port>/swagger`
    - Swagger UI provides interactive API documentation
+
+> **Note:** The application uses **auto-migration** on startup. No manual migration steps are required for normal development. See the [Migrations README](./FSR.UM.Infrastructure.SqlServer.Migrations/README.md) for advanced migration commands and troubleshooting.
 
 ## 📦 Dependencies
 
@@ -190,7 +191,17 @@ FSR.UM.Infrastructure.SqlServer.Migrations
 
 ### Database Migrations
 
-To create a new migration:
+The application uses **automatic migrations** on startup. When you run the application, it will:
+- ✅ Create databases if they don't exist
+- ✅ Apply all pending migrations automatically
+- ✅ Seed initial data
+
+**For detailed migration documentation, commands, and troubleshooting, see:**
+📚 **[FSR.UM.Infrastructure.SqlServer.Migrations/README.md](./FSR.UM.Infrastructure.SqlServer.Migrations/README.md)**
+
+#### Quick Manual Migration Commands
+
+If you need to create new migrations manually:
 
 ```bash
 # For AuthDb
@@ -199,6 +210,8 @@ dotnet ef migrations add MigrationName --project FSR.UM.Infrastructure.SqlServer
 # For PropertyDb
 dotnet ef migrations add MigrationName --project FSR.UM.Infrastructure.SqlServer.Migrations --startup-project FSR.UM.Api --context PropertyDbContext --output-dir Migrations/PropertyDb
 ```
+
+> 💡 **Tip:** For complete migration commands (list, remove, rollback, etc.), refer to the [Migrations README](./FSR.UM.Infrastructure.SqlServer.Migrations/README.md).
 
 ## 📝 API Endpoints
 
