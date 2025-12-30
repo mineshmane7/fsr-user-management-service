@@ -43,12 +43,14 @@ Simple Property Management API demonstrating Role-Based Access Control (RBAC) wi
 - **User**: View only
 
 ## ⚠️ Ping Identity Registration Requirement
-**User Creation Security:**
-- Only users with emails registered in Ping Identity can be created
+**Authentication & User Creation Security:**
+- 🔒 **Login**: Only users with emails registered in Ping Identity can login to the system
+- 🔒 **User Creation**: Only users with emails registered in Ping Identity can be created
 - Email must exist in the `RegisteredPingUsers` database table
-- This check happens automatically when creating users
+- This check happens automatically during login and user creation
 
 **Test Ping Registered Emails (Pre-seeded):**
+- admin@fsr.com (Already has user account)
 - john.doe@fsr.com
 - jane.smith@fsr.com
 - mike.wilson@fsr.com
@@ -58,17 +60,28 @@ Simple Property Management API demonstrating Role-Based Access Control (RBAC) wi
 
 ## 🚀 Quick Start
 1. Login with: `admin@fsr.com` / `Admin@123`
-2. Copy the access token
-3. Click 'Authorize' and paste: `Bearer <token>`
-4. Test creating users - use only Ping-registered emails!
-5. Test the Property APIs with different roles!
+2. Copy the **access token** from the response (just the token part)
+3. Click 'Authorize' button (🔓 icon at the top)
+4. Paste your token directly - **no need to add 'Bearer '** prefix!
+5. Click 'Authorize' and then 'Close'
+6. Test creating users - use only Ping-registered emails!
+7. Test the Property APIs with different roles!
+
+**Note:** The system automatically handles the 'Bearer ' prefix, so you can paste your token as-is.
         "
     });
     
     // Add JWT authentication to Swagger
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Description = @"JWT Authorization header. 
+        
+**You can paste the token directly without 'Bearer ' prefix.**
+
+Example: Just paste your token like this:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+The system will automatically handle the 'Bearer ' prefix for you.",
         Name = "Authorization",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
@@ -97,7 +110,7 @@ Simple Property Management API demonstrating Role-Based Access Control (RBAC) wi
 // Register infrastructure services
 builder.Services.AddSqlServerInfrastructure(builder.Configuration);
 
-// Register application services
+// Register application services (AuthService moved to SqlServer project)
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
@@ -127,6 +140,27 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured")))
+        };
+
+        // Automatically handle "Bearer " prefix
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                // Get the token from Authorization header
+                var authorization = context.Request.Headers.Authorization.ToString();
+                
+                if (!string.IsNullOrEmpty(authorization))
+                {
+                    // If token doesn't have "Bearer " prefix, add it automatically
+                    if (!authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Token = authorization;
+                    }
+                }
+                
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -202,12 +236,16 @@ Console.WriteLine();
 Console.WriteLine("🔐 Test Accounts:");
 Console.WriteLine("   Admin   → admin@fsr.com / Admin@123 (All permissions)");
 Console.WriteLine();
+Console.WriteLine("💡 Token Tip:");
+Console.WriteLine("   No need to type 'Bearer ' in Swagger - just paste your token!");
+Console.WriteLine();
 Console.WriteLine("⚠️  Ping Registration Requirement:");
-Console.WriteLine("   Only emails registered with Ping can create users!");
+Console.WriteLine("   🔒 LOGIN: Only Ping-registered emails can login!");
+Console.WriteLine("   🔒 USER CREATION: Only Ping-registered emails can be created!");
 Console.WriteLine("   Test Ping Emails: john.doe@fsr.com, jane.smith@fsr.com");
 Console.WriteLine();
 Console.WriteLine("📝 Available Endpoints:");
-Console.WriteLine("   🔐 POST /api/auth/login - User login");
+Console.WriteLine("   🔐 POST /api/auth/login - User login (Ping check required)");
 Console.WriteLine("   👤 POST /api/admin/users - Create user (Admin only, Ping required)");
 Console.WriteLine("   🏢 GET    /api/properties - View properties (View permission)");
 Console.WriteLine("   🏢 GET    /api/properties/{id} - View property (View permission)");

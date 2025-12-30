@@ -2,15 +2,24 @@
 
 ## ?? Overview
 
-This document describes the Ping Identity integration feature that adds an additional layer of security to user creation in the FSR User Management API.
+This document describes the Ping Identity integration feature that adds an additional layer of security to **both login and user creation** in the FSR User Management API.
 
 ## ?? Feature Description
 
-**Requirement:** Only Admin users can create new users, and only if the user's email is pre-registered with Ping Identity.
+**Requirement:** 
+1. Only users with emails registered in Ping Identity can **login** to the system
+2. Only Admin users can create new users, and only if the user's email is pre-registered with Ping Identity
 
 ### Security Flow
+
+#### Login Flow
+1. ? **Ping Registration Check** - The email must exist in the `RegisteredPingUsers` table with `IsActive = true`
+2. ? **User Authentication** - Verify user exists and password is correct
+3. ? **Token Generation** - Generate JWT token with roles and permissions
+
+#### User Creation Flow
 1. ? **Admin Authentication** - Only users with Admin role can access the user creation endpoint
-2. ? **Ping Registration Check** - The email must exist in the `RegisteredPingUsers` table
+2. ? **Ping Registration Check** - The email must exist in the `RegisteredPingUsers` table with `IsActive = true`
 3. ? **User Creation** - If both checks pass, the user is created with the specified role
 
 ## ??? Database Schema
@@ -49,6 +58,67 @@ The following emails are seeded in the database for testing:
 **To add more emails:** Update the `AuthDbSeeder.cs` file and add entries to the `SeedRegisteredPingUsers()` method.
 
 ## ?? API Endpoints
+
+### User Login (With Ping Check)
+
+**Endpoint:** `POST /api/auth/login`
+
+**Authorization:** Anonymous (but requires Ping registration)
+
+**Request Body:**
+```json
+{
+  "email": "admin@fsr.com",
+  "password": "Admin@123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresAt": "2024-12-22T11:30:00Z",
+  "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "email": "admin@fsr.com",
+  "userName": "admin",
+  "firstName": "System",
+  "lastName": "Administrator",
+  "roles": ["Admin"],
+  "permissions": ["Create", "View", "Edit", "Delete", "Archive", "BulkEdit", "BulkExport", "BulkImport"]
+}
+```
+
+**Error Responses:**
+
+**401 - Email Not Registered with Ping:**
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc7235#section-3.1",
+  "title": "Unauthorized",
+  "status": 401
+}
+```
+Console shows: "Access denied. Your email is not registered with Ping Identity. Please contact your administrator."
+
+**401 - Invalid Credentials:**
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc7235#section-3.1",
+  "title": "Unauthorized",
+  "status": 401
+}
+```
+
+**401 - User Account Inactive:**
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc7235#section-3.1",
+  "title": "Unauthorized",
+  "status": 401
+}
+```
+
+---
 
 ### User Creation (With Ping Check)
 
@@ -182,9 +252,92 @@ Authorization: Bearer {token}
 # Expected: 403 Forbidden - Only Admin role can create users
 ```
 
+## ?? Testing Scenarios
+
+### Scenario 1: Login with Registered Email (Success)
+```bash
+# Login with Ping-registered email
+POST /api/auth/login
+{
+  "email": "admin@fsr.com",
+  "password": "Admin@123"
+}
+
+# Expected: 200 OK with JWT token
+```
+
+### Scenario 2: Login with Unregistered Email (Failure)
+```bash
+# Try to login with email NOT in RegisteredPingUsers table
+POST /api/auth/login
+{
+  "email": "notregistered@example.com",
+  "password": "SomePassword123"
+}
+
+# Expected: 401 Unauthorized
+# Error message: "Access denied. Your email is not registered with Ping Identity..."
+```
+
+### Scenario 3: Create User with Registered Email (Success)
+```bash
+# 1. Login as Admin
+POST /api/auth/login
+{
+  "email": "admin@fsr.com",
+  "password": "Admin@123"
+}
+
+# 2. Create user with registered Ping email
+POST /api/admin/users
+Authorization: Bearer {token}
+{
+  "email": "john.doe@fsr.com",
+  "userName": "johndoe",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "1234567890",
+  "password": "SecurePass@123",
+  "roleName": "Manager"
+}
+
+# Expected: 201 Created - User created successfully
+```
+
 ## ?? Code Implementation
 
-### UserManagementService.cs
+### AuthService.cs (Login with Ping Check)
+```csharp
+public async Task<LoginResponse> LoginAsync(LoginRequest request)
+{
+    // STEP 1: Check if the email is registered with Ping
+    var registeredPingUser = await _authDb.RegisteredPingUsers
+        .FirstOrDefaultAsync(rpu => rpu.Email == request.Email && rpu.IsActive);
+
+    if (registeredPingUser == null)
+        throw new UnauthorizedAccessException(
+            "Access denied. Your email is not registered with Ping Identity. " +
+            "Please contact your administrator.");
+
+    // STEP 2: Support login with email or username
+    var user = await _userRepo.GetByEmailOrUserNameAsync(request.Email);
+
+    if (user == null)
+        throw new UnauthorizedAccessException("Invalid credentials");
+
+    // STEP 3: Check if user is active
+    if (!user.IsActive)
+        throw new UnauthorizedAccessException("User account is inactive");
+
+    // STEP 4: Verify password
+    if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        throw new UnauthorizedAccessException("Invalid credentials");
+
+    // STEP 5: Generate JWT token and return response...
+}
+```
+
+### UserManagementService.cs (User Creation with Ping Check)
 ```csharp
 public async Task<UserWithRolesDto> CreateUserWithRoleAsync(CreateUserRequest request)
 {
@@ -275,6 +428,16 @@ private static void SeedRegisteredPingUsers(AuthDbContext context)
 
 ## ?? Troubleshooting
 
+### Issue: "Access denied. Your email is not registered with Ping Identity" error when logging in
+
+**Solution:** 
+1. Check the database `RegisteredPingUsers` table to see if your email exists
+2. Verify the email has `IsActive = true`
+3. If not registered:
+   - Add it to `AuthDbSeeder.cs` in the `SeedRegisteredPingUsers()` method
+   - Either delete the database and restart the app (dev/test) or manually insert into DB
+4. Contact your administrator to get your email registered
+
 ### Issue: "Email not registered with Ping" error when creating user
 
 **Solution:** 
@@ -284,6 +447,14 @@ private static void SeedRegisteredPingUsers(AuthDbContext context)
    - Delete the database and restart the app (for dev/test)
    - Manually insert into the database
    - Create and run a new migration with the additional emails
+
+### Issue: Admin user can't login after implementing Ping check
+
+**Solution:**
+- The admin email (admin@fsr.com) is already in the seeded RegisteredPingUsers data
+- Check if database migration ran successfully
+- Verify RegisteredPingUsers table exists and has data
+- Check if admin@fsr.com exists with `IsActive = true` in RegisteredPingUsers table
 
 ### Issue: Need to add many emails at once
 

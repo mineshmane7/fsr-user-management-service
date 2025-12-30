@@ -25,18 +25,56 @@ public static class ApiEndpoints
                 var response = await authService.LoginAsync(request);
                 return Results.Ok(response);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                return Results.Unauthorized();
+                // Return 401 with specific error message
+                return Results.Json(
+                    new {
+                        error = "Authentication Failed",
+                        message = ex.Message,
+                        timestamp = DateTime.UtcNow
+                    },
+                    statusCode: 401
+                );
             }
             catch (Exception ex)
             {
-                return Results.Problem(ex.Message);
+                // Log unexpected errors and return generic message
+                Console.WriteLine($"Login error: {ex.Message}");
+                return Results.Json(
+                    new {
+                        error = "Login Error",
+                        message = "An unexpected error occurred during login. Please try again later.",
+                        timestamp = DateTime.UtcNow
+                    },
+                    statusCode: 500
+                );
             }
         })
         .WithName("Login")
         .WithSummary("User Login")
-        .WithDescription("Authenticate and get JWT token with roles and permissions")
+        .WithDescription(@"Authenticate and get JWT token with roles and permissions.
+
+**⚠️ Ping Identity Requirement:**
+- Only users with emails registered in Ping Identity can login
+- Email must exist in the RegisteredPingUsers table
+- If email is not registered with Ping, login will be denied
+
+**Error Scenarios:**
+- **Email not in Ping**: 'Access denied. Your email is not registered with Ping Identity...'
+- **Ping registration inactive**: 'Your Ping Identity registration has been deactivated...'
+- **User account not found**: 'No account found with this email...'
+- **User account inactive**: 'Your user account has been deactivated...'
+- **Invalid password**: 'Invalid password. Please check your credentials...'
+
+**Test Account:**
+- Email: admin@fsr.com
+- Password: Admin@123
+
+**Response includes:**
+- JWT access token
+- User information
+- Assigned roles and permissions")
         .AllowAnonymous();
 
         // ==================== User Management (Admin Only) ====================
