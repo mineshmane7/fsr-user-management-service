@@ -13,6 +13,9 @@ namespace FSR.UM.Infrastructure.SqlServer.Seed
             // Seed Roles
             SeedRoles(context);
             
+            // Seed RegisteredPingUsers
+            SeedRegisteredPingUsers(context);
+            
             // Seed Admin User
             SeedAdminUser(context);
         }
@@ -91,6 +94,64 @@ namespace FSR.UM.Infrastructure.SqlServer.Seed
                 PermissionId = viewPermission.Id
             });
 
+            context.SaveChanges();
+        }
+
+        private static void SeedRegisteredPingUsers(AuthDbContext context)
+        {
+            if (context.RegisteredPingUsers.Any())
+                return;
+
+            var registeredPingUsers = new List<RegisteredPingUser>
+            {
+                new RegisteredPingUser 
+                { 
+                    Email = "admin@fsr.com", 
+                    FirstName = "System", 
+                    LastName = "Administrator",
+                    RegisteredDate = DateTime.UtcNow,
+                    IsActive = true,
+                    Notes = "System administrator account"
+                },
+                new RegisteredPingUser 
+                { 
+                    Email = "john.doe@fsr.com", 
+                    FirstName = "John", 
+                    LastName = "Doe",
+                    RegisteredDate = DateTime.UtcNow,
+                    IsActive = true,
+                    Notes = "Test manager user"
+                },
+                new RegisteredPingUser 
+                { 
+                    Email = "jane.smith@fsr.com", 
+                    FirstName = "Jane", 
+                    LastName = "Smith",
+                    RegisteredDate = DateTime.UtcNow,
+                    IsActive = true,
+                    Notes = "Test regular user"
+                },
+                new RegisteredPingUser 
+                { 
+                    Email = "mike.wilson@fsr.com", 
+                    FirstName = "Mike", 
+                    LastName = "Wilson",
+                    RegisteredDate = DateTime.UtcNow,
+                    IsActive = true,
+                    Notes = "Test user account"
+                },
+                new RegisteredPingUser 
+                { 
+                    Email = "sarah.johnson@fsr.com", 
+                    FirstName = "Sarah", 
+                    LastName = "Johnson",
+                    RegisteredDate = DateTime.UtcNow,
+                    IsActive = true,
+                    Notes = "Test user account"
+                }
+            };
+
+            context.RegisteredPingUsers.AddRange(registeredPingUsers);
             context.SaveChanges();
         }
 

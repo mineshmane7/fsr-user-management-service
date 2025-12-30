@@ -19,7 +19,16 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
 
         public async Task<UserWithRolesDto> CreateUserWithRoleAsync(CreateUserRequest request)
         {
-            // Validate that the user doesn't already exist
+            // ? STEP 1: Check if the email is registered with Ping
+            var registeredPingUser = await _authDb.RegisteredPingUsers
+                .FirstOrDefaultAsync(rpu => rpu.Email == request.Email && rpu.IsActive);
+
+            if (registeredPingUser == null)
+                throw new InvalidOperationException(
+                    $"Email '{request.Email}' is not registered with Ping Identity. " +
+                    "Only users registered with Ping can be created in the system.");
+
+            // ? STEP 2: Validate that the user doesn't already exist
             var existingUser = await _userRepo.GetByEmailAsync(request.Email);
             if (existingUser != null)
                 throw new InvalidOperationException($"User with email '{request.Email}' already exists");
@@ -28,7 +37,7 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
             if (existingUserName != null)
                 throw new InvalidOperationException($"User with username '{request.UserName}' already exists");
 
-            // Validate that the role exists
+            // ? STEP 3: Validate that the role exists
             var role = await _authDb.Roles
                 .Include(r => r.RolePermissionAssignments)
                     .ThenInclude(rpa => rpa.Permission)
@@ -37,7 +46,7 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
             if (role == null)
                 throw new InvalidOperationException($"Role '{request.RoleName}' not found");
 
-            // Create the user
+            // ? STEP 4: Create the user
             var user = new User
             {
                 Id = Guid.NewGuid(),
@@ -54,7 +63,7 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
             // Add user to database
             var createdUser = await _userRepo.AddAsync(user);
 
-            // Create user-role assignment
+            // ? STEP 5: Create user-role assignment
             var userRoleAssignment = new UserRoleAssignment
             {
                 UserId = createdUser.Id,
@@ -65,7 +74,7 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
             _authDb.UserRoleAssignments.Add(userRoleAssignment);
             await _authDb.SaveChangesAsync();
 
-            // Fetch the user with roles to return
+            // ? STEP 6: Fetch the user with roles to return
             var userWithRoles = await _userRepo.GetByIdWithRolesAsync(createdUser.Id);
             
             if (userWithRoles == null)

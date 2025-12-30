@@ -69,11 +69,22 @@ public static class ApiEndpoints
         .WithName("CreateUser")
         .WithSummary("Create New User")
         .WithDescription(@"Create a new user with a role. Available roles: Admin, Manager, User
-        
+
+**⚠️ Important: Ping Registration Required**
+- Only emails registered in Ping Identity can be used to create users
+- The email must exist in the RegisteredPingUsers table
+- If the email is not registered with Ping, user creation will fail
+
 **Role Permissions:**
 - Admin: All permissions (Create, View, Edit, Delete, Archive, BulkEdit, BulkExport, BulkImport)
 - Manager: Create, View, Edit
-- User: View only");
+- User: View only
+
+**Test Registered Ping Emails:**
+- john.doe@fsr.com
+- jane.smith@fsr.com
+- mike.wilson@fsr.com
+- sarah.johnson@fsr.com");
 
         // ==================== Property Management (RBAC) ====================
         var propertyGroup = app.MapGroup("/api/properties")

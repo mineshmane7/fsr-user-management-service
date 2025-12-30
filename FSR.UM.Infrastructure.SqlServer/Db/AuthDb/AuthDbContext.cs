@@ -15,6 +15,7 @@ namespace FSR.UM.Infrastructure.SqlServer.Db.AuthDb
         public DbSet<OrgTier> OrgTiers => Set<OrgTier>();
         public DbSet<UserRoleAssignment> UserRoleAssignments => Set<UserRoleAssignment>();
         public DbSet<RolePermissionAssignment> RolePermissionAssignments => Set<RolePermissionAssignment>();
+        public DbSet<RegisteredPingUser> RegisteredPingUsers => Set<RegisteredPingUser>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -75,6 +76,11 @@ namespace FSR.UM.Infrastructure.SqlServer.Db.AuthDb
             // Configure Permission
             modelBuilder.Entity<Permission>()
                 .HasIndex(p => p.Name)
+                .IsUnique();
+
+            // Configure RegisteredPingUser
+            modelBuilder.Entity<RegisteredPingUser>()
+                .HasIndex(rpu => rpu.Email)
                 .IsUnique();
         }
     }

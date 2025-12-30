@@ -35,18 +35,33 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = @"
 ## 🎯 API Overview
-Simple Property Management API demonstrating Role-Based Access Control (RBAC).
+Simple Property Management API demonstrating Role-Based Access Control (RBAC) with Ping Identity integration.
 
 ## 🔐 Available Roles & Permissions
 - **Admin**: All permissions (Create, View, Edit, Delete, Archive, BulkEdit, BulkExport, BulkImport)
 - **Manager**: Create, View, Edit
 - **User**: View only
 
+## ⚠️ Ping Identity Registration Requirement
+**User Creation Security:**
+- Only users with emails registered in Ping Identity can be created
+- Email must exist in the `RegisteredPingUsers` database table
+- This check happens automatically when creating users
+
+**Test Ping Registered Emails (Pre-seeded):**
+- john.doe@fsr.com
+- jane.smith@fsr.com
+- mike.wilson@fsr.com
+- sarah.johnson@fsr.com
+
+**Note:** To add more emails, update the `AuthDbSeeder.cs` file in the codebase.
+
 ## 🚀 Quick Start
 1. Login with: `admin@fsr.com` / `Admin@123`
 2. Copy the access token
 3. Click 'Authorize' and paste: `Bearer <token>`
-4. Test the Property APIs with different roles!
+4. Test creating users - use only Ping-registered emails!
+5. Test the Property APIs with different roles!
         "
     });
     
@@ -187,9 +202,13 @@ Console.WriteLine();
 Console.WriteLine("🔐 Test Accounts:");
 Console.WriteLine("   Admin   → admin@fsr.com / Admin@123 (All permissions)");
 Console.WriteLine();
+Console.WriteLine("⚠️  Ping Registration Requirement:");
+Console.WriteLine("   Only emails registered with Ping can create users!");
+Console.WriteLine("   Test Ping Emails: john.doe@fsr.com, jane.smith@fsr.com");
+Console.WriteLine();
 Console.WriteLine("📝 Available Endpoints:");
 Console.WriteLine("   🔐 POST /api/auth/login - User login");
-Console.WriteLine("   👤 POST /api/admin/users - Create user (Admin only)");
+Console.WriteLine("   👤 POST /api/admin/users - Create user (Admin only, Ping required)");
 Console.WriteLine("   🏢 GET    /api/properties - View properties (View permission)");
 Console.WriteLine("   🏢 GET    /api/properties/{id} - View property (View permission)");
 Console.WriteLine("   🏢 POST   /api/properties - Create property (Create permission)");
