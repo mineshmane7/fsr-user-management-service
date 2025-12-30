@@ -14,11 +14,16 @@ namespace FSR.UM.Core.Models
         public string FirstName { get; set; } = null!;
         public string LastName { get; set; } = null!;
         public string PasswordHash { get; set; } = null!;
-        public string PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
 
-        public DateTime CreatedDate { get; set; }
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime? ModifiedDate { get; set; }
+        public bool IsActive { get; set; } = true;
 
-        public ICollection<Role> Roles { get; set; } = new List<Role>();
+        // Navigation properties for many-to-many relationship
+        public ICollection<UserRoleAssignment> UserRoleAssignments { get; set; } = new List<UserRoleAssignment>();
+        
+        // Helper property to get roles (not mapped to database)
+        public ICollection<Role> Roles => UserRoleAssignments?.Select(ura => ura.Role).ToList() ?? new List<Role>();
     }
 }

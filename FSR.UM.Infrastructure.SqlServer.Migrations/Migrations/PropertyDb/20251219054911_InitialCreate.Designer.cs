@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FSR.UM.Infrastructure.SqlServer.Migrations.Migrations.PropertyDb
 {
     [DbContext(typeof(PropertyDbContext))]
-    [Migration("20251218033819_InitialCreate")]
+    [Migration("20251219054911_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

@@ -1,10 +1,16 @@
-﻿public class LoginResponse
+﻿namespace FSR.UM.Core.Models.Auth
 {
-    public string AccessToken { get; set; } = default!;
-    public DateTime ExpiresAt { get; set; }
+    public class LoginResponse
+    {
+        public string AccessToken { get; set; } = default!;
+        public DateTime ExpiresAt { get; set; }
 
-    public Guid UserId { get; set; }
-    public string Email { get; set; } = default!;
-    public IEnumerable<string> Roles { get; set; } = [];
-    public IEnumerable<string> Permissions { get; set; } = [];
+        public Guid UserId { get; set; }
+        public string Email { get; set; } = default!;
+        public string UserName { get; set; } = default!;
+        public string FirstName { get; set; } = default!;
+        public string LastName { get; set; } = default!;
+        public IEnumerable<string> Roles { get; set; } = [];
+        public IEnumerable<string> Permissions { get; set; } = [];
+    }
 }

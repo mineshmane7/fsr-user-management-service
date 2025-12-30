@@ -19,11 +19,33 @@ namespace FSR.UM.Infrastructure.SqlServer.Repositories
             return await _db.Properties.ToListAsync();
         }
 
+        public async Task<Property?> GetByIdAsync(int id)
+        {
+            return await _db.Properties.FindAsync(id);
+        }
+
         public async Task<Property> AddAsync(Property property)
         {
             _db.Properties.Add(property);
             await _db.SaveChangesAsync();
             return property;
+        }
+
+        public async Task<Property> UpdateAsync(Property property)
+        {
+            _db.Properties.Update(property);
+            await _db.SaveChangesAsync();
+            return property;
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var property = await _db.Properties.FindAsync(id);
+            if (property != null)
+            {
+                _db.Properties.Remove(property);
+                await _db.SaveChangesAsync();
+            }
         }
     }
 }
