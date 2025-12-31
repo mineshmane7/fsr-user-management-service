@@ -1,10 +1,14 @@
-﻿using FSR.UM.Core.Authorization;
+﻿using CsvHelper;
+using FSR.UM.Core.Authorization;
 using FSR.UM.Core.Interfaces;
 using FSR.UM.Core.Interfaces.Auth;
 using FSR.UM.Core.Models;
 using FSR.UM.Core.Models.Auth;
 using FSR.UM.Core.Models.DTOs;
+using FSR.UM.Infrastructure.Parsing;
 using Microsoft.AspNetCore.Mvc;
+using System.Formats.Asn1;
+using System.Globalization;
 
 namespace Dummy.Iam.Api.Endpoints;
 
@@ -123,6 +127,39 @@ public static class ApiEndpoints
 - jane.smith@fsr.com
 - mike.wilson@fsr.com
 - sarah.johnson@fsr.com");
+
+                adminGroup.MapPost("/users/bulk-upload",
+            [HasPermission("BulkImport")] async (
+                IFormFile file,
+                IUserManagementService userService) =>
+            {
+                if (file == null || file.Length == 0)
+                    return Results.BadRequest("CSV file is required");
+
+              //  var users = CsvParser.ParseCsv(file.OpenReadStream());
+                var users = UserCsvParser.Parse(file.OpenReadStream());
+
+
+                var result = await userService.BulkCreateUsersAsync(users);
+
+                return Results.Ok(new
+                {
+                    message = "Bulk upload completed",
+                    result.TotalRecords,
+                    result.CreatedCount,
+                    result.FailedCount,
+                    result.Failures
+                });
+            }).DisableAntiforgery();
+
+        //public static List<CreateUserRequest> ParseCsv(Stream stream)
+        //{
+        //    using var reader = new StreamReader(stream);
+        //    using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+        //    return csv.GetRecords<CreateUserRequest>().ToList();
+        //}
+        //whre should i add this parsing code?
 
         // ==================== Property Management (RBAC) ====================
         var propertyGroup = app.MapGroup("/api/properties")

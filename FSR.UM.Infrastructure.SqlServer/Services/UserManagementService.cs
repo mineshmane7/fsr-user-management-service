@@ -82,5 +82,35 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
 
             return userWithRoles;
         }
+
+            public async Task<BulkCreateUserResult> BulkCreateUsersAsync(
+        List<CreateUserRequest> users)
+        {
+            var result = new BulkCreateUserResult
+            {
+                TotalRecords = users.Count
+            };
+
+            foreach (var request in users)
+            {
+                try
+                {
+                    await CreateUserWithRoleAsync(request);
+                    result.CreatedCount++;
+                }
+                catch (Exception ex)
+                {
+                    result.FailedCount++;
+                    result.Failures.Add(new BulkUserFailure
+                    {
+                        Email = request.Email,
+                        Reason = ex.Message
+                    });
+                }
+            }
+
+            return result;
+        }
+
     }
 }

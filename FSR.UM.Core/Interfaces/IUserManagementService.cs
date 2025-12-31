@@ -9,5 +9,6 @@ namespace FSR.UM.Core.Interfaces
         /// Create a new user with basic details and assign a role
         /// </summary>
         Task<UserWithRolesDto> CreateUserWithRoleAsync(CreateUserRequest request);
+        Task<BulkCreateUserResult> BulkCreateUsersAsync(List<CreateUserRequest> users);
     }
 }
