@@ -138,6 +138,13 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
             await _userRepo.SoftDeleteAsync(userId);
         }
 
+        public async Task<List<UserWithRolesDto>> GetAllUsersAsync()
+        {
+            var users = await _userRepo.GetAllActiveWithRolesAsync();
+
+            return users;
+        }
+
 
     }
 }

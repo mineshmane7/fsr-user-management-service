@@ -199,6 +199,23 @@ public static class ApiEndpoints
             .WithName("SoftDeleteUser")
             .WithSummary("Deactivate User");
 
+        adminGroup.MapGet("/users",
+    [HasPermission("View")] async (
+        IUserManagementService userService) =>
+    {
+        var users = await userService.GetAllUsersAsync();
+
+        return Results.Ok(new
+        {
+            totalCount = users.Count,
+            users = users
+        });
+    })
+    .WithName("GetAllUsers")
+    .WithSummary("Get All Active Users")
+    .WithDescription("Returns all active users with their roles and permissions");
+
+
 
         // ==================== Property Management (RBAC) ====================
         var propertyGroup = app.MapGroup("/api/properties")

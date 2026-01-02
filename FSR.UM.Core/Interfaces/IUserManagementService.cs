@@ -12,6 +12,7 @@ namespace FSR.UM.Core.Interfaces
         Task<BulkCreateUserResult> BulkCreateUsersAsync(List<CreateUserRequest> users);
         Task<UserWithRolesDto> UpdateUserAsync(Guid userId, UpdateUserRequest request);
         Task SoftDeleteUserAsync(Guid userId);
+        Task<List<UserWithRolesDto>> GetAllUsersAsync();
 
     }
 }

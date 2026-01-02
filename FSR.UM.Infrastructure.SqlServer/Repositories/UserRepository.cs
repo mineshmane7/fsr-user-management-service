@@ -15,25 +15,65 @@ namespace FSR.UM.Infrastructure.SqlServer.Repositories
             _db = db;
         }
 
-        public async Task<List<User>> GetAllAsync()
+        //public async Task<List<User>> GetAllAsync()
+        //{
+        //    // Return users without navigation properties to avoid circular references
+        //    return await _db.Users
+        //        .Where(u=>u.IsActive)
+        //        .Select(u => new User
+        //        {
+        //            Id = u.Id,
+        //            Email = u.Email,
+        //            UserName = u.UserName,
+        //            FirstName = u.FirstName,
+        //            LastName = u.LastName,
+        //            PhoneNumber = u.PhoneNumber,
+        //            IsActive = u.IsActive,
+        //            CreatedDate = u.CreatedDate,
+        //            ModifiedDate = u.ModifiedDate,
+        //            PasswordHash = u.PasswordHash
+        //        })
+        //        .ToListAsync();
+        //}
+        public async Task<List<UserWithRolesDto>> GetAllActiveWithRolesAsync()
         {
-            // Return users without navigation properties to avoid circular references
-            return await _db.Users
-                .Where(u=>u.IsActive)
-                .Select(u => new User
-                {
-                    Id = u.Id,
-                    Email = u.Email,
-                    UserName = u.UserName,
-                    FirstName = u.FirstName,
-                    LastName = u.LastName,
-                    PhoneNumber = u.PhoneNumber,
-                    IsActive = u.IsActive,
-                    CreatedDate = u.CreatedDate,
-                    ModifiedDate = u.ModifiedDate,
-                    PasswordHash = u.PasswordHash
-                })
+            var users = await _db.Users
+                .Where(u => u.IsActive)
+                .Include(u => u.UserRoleAssignments)
+                    .ThenInclude(ura => ura.Role)
+                        .ThenInclude(r => r.RolePermissionAssignments)
+                            .ThenInclude(rpa => rpa.Permission)
                 .ToListAsync();
+
+            return users.Select(user => new UserWithRolesDto
+            {
+                Id = user.Id,
+                Email = user.Email,
+                UserName = user.UserName,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                PhoneNumber = user.PhoneNumber,
+                IsActive = user.IsActive,
+                CreatedDate = user.CreatedDate,
+                ModifiedDate = user.ModifiedDate,
+                Roles = user.UserRoleAssignments.Select(ura => new RoleDto
+                {
+                    Id = ura.Role.Id,
+                    Name = ura.Role.Name,
+                    Description = ura.Role.Description,
+                    Permissions = ura.Role.RolePermissionAssignments.Select(rpa => new PermissionDto
+                    {
+                        Id = rpa.Permission.Id,
+                        Name = rpa.Permission.Name,
+                        Description = rpa.Permission.Description
+                    }).ToList()
+                }).ToList(),
+                Permissions = user.UserRoleAssignments
+                    .SelectMany(ura => ura.Role.RolePermissionAssignments
+                        .Select(rpa => rpa.Permission.Name))
+                    .Distinct()
+                    .ToList()
+            }).ToList();
         }
 
         public async Task<UserWithRolesDto?> GetByIdWithRolesAsync(Guid id)

@@ -5,7 +5,8 @@ namespace FSR.UM.Core.Interfaces
 {
     public interface IUserRepository
     {
-        Task<List<User>> GetAllAsync();
+       // Task<List<User>> GetAllAsync();
+        Task<List<UserWithRolesDto>> GetAllActiveWithRolesAsync();
         Task<UserWithRolesDto?> GetByIdWithRolesAsync(Guid id);
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetByUserNameAsync(string username);
