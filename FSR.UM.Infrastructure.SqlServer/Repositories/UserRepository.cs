@@ -19,6 +19,7 @@ namespace FSR.UM.Infrastructure.SqlServer.Repositories
         {
             // Return users without navigation properties to avoid circular references
             return await _db.Users
+                .Where(u=>u.IsActive)
                 .Select(u => new User
                 {
                     Id = u.Id,
@@ -125,14 +126,23 @@ namespace FSR.UM.Infrastructure.SqlServer.Repositories
             return user;
         }
 
-        public async Task DeleteAsync(Guid id)
+        public async Task<User?> GetByIdAsync(Guid id)
+        {
+            return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+
+        public async Task SoftDeleteAsync(Guid id)
         {
             var user = await _db.Users.FindAsync(id);
-            if (user != null)
-            {
-                _db.Users.Remove(user);
-                await _db.SaveChangesAsync();
-            }
+            if (user == null)
+                throw new InvalidOperationException("User not found");
+
+            user.IsActive = false;
+            user.ModifiedDate = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+
         }
 
         public async Task<List<string>> GetUserPermissionsAsync(Guid userId)

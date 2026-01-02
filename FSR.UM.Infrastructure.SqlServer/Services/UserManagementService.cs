@@ -112,5 +112,32 @@ namespace FSR.UM.Infrastructure.SqlServer.Services
             return result;
         }
 
+        public async Task<UserWithRolesDto> UpdateUserAsync(Guid userId, UpdateUserRequest request)
+        {
+            var user = await _userRepo.GetByIdAsync(userId);
+            if (user == null)
+                throw new InvalidOperationException("User not found");
+
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+            user.PhoneNumber = request.PhoneNumber;
+            user.IsActive = request.IsActive;
+            user.ModifiedDate = DateTime.UtcNow;
+
+            await _userRepo.UpdateAsync(user);
+
+            var updatedUser = await _userRepo.GetByIdWithRolesAsync(userId);
+            if (updatedUser == null)
+                throw new InvalidOperationException("Failed to retrieve updated user");
+
+            return updatedUser;
+        }
+
+        public async Task SoftDeleteUserAsync(Guid userId)
+        {
+            await _userRepo.SoftDeleteAsync(userId);
+        }
+
+
     }
 }

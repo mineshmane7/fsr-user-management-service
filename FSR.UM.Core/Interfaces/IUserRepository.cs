@@ -12,7 +12,9 @@ namespace FSR.UM.Core.Interfaces
         Task<User?> GetByEmailOrUserNameAsync(string emailOrUsername);
         Task<User> AddAsync(User user);
         Task<User> UpdateAsync(User user);
-        Task DeleteAsync(Guid id);
+        Task<User?> GetByIdAsync(Guid id);
+        Task SoftDeleteAsync(Guid id);
+       // Task DeleteAsync(Guid id);
         Task<List<string>> GetUserPermissionsAsync(Guid userId);
     }
 }

@@ -10,5 +10,8 @@ namespace FSR.UM.Core.Interfaces
         /// </summary>
         Task<UserWithRolesDto> CreateUserWithRoleAsync(CreateUserRequest request);
         Task<BulkCreateUserResult> BulkCreateUsersAsync(List<CreateUserRequest> users);
+        Task<UserWithRolesDto> UpdateUserAsync(Guid userId, UpdateUserRequest request);
+        Task SoftDeleteUserAsync(Guid userId);
+
     }
 }

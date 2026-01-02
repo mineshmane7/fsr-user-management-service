@@ -152,14 +152,53 @@ public static class ApiEndpoints
                 });
             }).DisableAntiforgery();
 
-        //public static List<CreateUserRequest> ParseCsv(Stream stream)
-        //{
-        //    using var reader = new StreamReader(stream);
-        //    using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
 
-        //    return csv.GetRecords<CreateUserRequest>().ToList();
-        //}
-        //whre should i add this parsing code?
+
+                adminGroup.MapPut("/users/{id:guid}",
+            [HasPermission("Edit")] async (
+                Guid id,
+                UpdateUserRequest request,
+                IUserManagementService userService) =>
+            {
+                try
+                {
+                    var updatedUser = await userService.UpdateUserAsync(id, request);
+                    return Results.Ok(new
+                    {
+                        message = "User updated successfully",
+                        user = updatedUser
+                    });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
+            })
+            .WithName("UpdateUser")
+            .WithSummary("Update User");
+
+
+                adminGroup.MapDelete("/users/{id:guid}",
+            [HasPermission("Delete")] async (
+                Guid id,
+                IUserManagementService userService) =>
+            {
+                try
+                {
+                    await userService.SoftDeleteUserAsync(id);
+                    return Results.Ok(new
+                    {
+                        message = "User deactivated successfully"
+                    });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
+            })
+            .WithName("SoftDeleteUser")
+            .WithSummary("Deactivate User");
+
 
         // ==================== Property Management (RBAC) ====================
         var propertyGroup = app.MapGroup("/api/properties")
